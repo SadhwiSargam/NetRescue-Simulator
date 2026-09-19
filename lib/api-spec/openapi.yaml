@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: NetRescue network resilience simulation API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: network
+    description: Network generation and state operations
+  - name: routing
+    description: Shortest-path routing operations
+  - name: failure
+    description: Failure injection operations
+  - name: simulation
+    description: Batch simulation operations
 paths:
   /healthz:
     get:
@@ -24,6 +32,162 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /network/generate:
+    post:
+      operationId: generateNetwork
+      tags: [network]
+      summary: Generate a connected network
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NetworkGenerateInput"
+      responses:
+        "200":
+          description: Generated network
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkState"
+        "400":
+          description: Invalid generation parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /network/reset:
+    post:
+      operationId: resetNetwork
+      tags: [network]
+      summary: Reset the current network failures
+      responses:
+        "200":
+          description: Reset network
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetworkState"
+        "400":
+          description: No network generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /route:
+    post:
+      operationId: findRoute
+      tags: [routing]
+      summary: Find the lowest-cost active route
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RouteInput"
+      responses:
+        "200":
+          description: Route result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RouteResult"
+        "400":
+          description: Invalid route request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /failure/link:
+    post:
+      operationId: failLink
+      tags: [failure]
+      summary: Fail an active network link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkFailureInput"
+      responses:
+        "200":
+          description: Failure result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FailureResult"
+        "400":
+          description: Invalid link request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /failure/node:
+    post:
+      operationId: failNode
+      tags: [failure]
+      summary: Fail an active network node
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NodeFailureInput"
+      responses:
+        "200":
+          description: Failure result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FailureResult"
+        "400":
+          description: Invalid node request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /recover:
+    post:
+      operationId: recoverRoute
+      tags: [routing]
+      summary: Calculate recovery after a failure
+      responses:
+        "200":
+          description: Recovery comparison
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryResult"
+        "400":
+          description: Recovery cannot be calculated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /simulate:
+    post:
+      operationId: runSimulation
+      tags: [simulation]
+      summary: Run reproducible automatic failure scenarios
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimulationInput"
+      responses:
+        "200":
+          description: Aggregate simulation metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulationResult"
+        "400":
+          description: Invalid simulation parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +197,212 @@ components:
           type: string
       required:
         - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    NetworkGenerateInput:
+      type: object
+      properties:
+        node_count:
+          type: integer
+          minimum: 4
+          maximum: 40
+        seed:
+          type: integer
+          minimum: 0
+        density:
+          type: number
+          minimum: 0.15
+          maximum: 0.9
+      required: [node_count, seed]
+    NetworkNode:
+      type: object
+      properties:
+        id:
+          type: string
+        active:
+          type: boolean
+        x:
+          type: number
+        y:
+          type: number
+      required: [id, active, x, y]
+    NetworkEdge:
+      type: object
+      properties:
+        source:
+          type: string
+        target:
+          type: string
+        cost:
+          type: number
+        active:
+          type: boolean
+      required: [source, target, cost, active]
+    NetworkState:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/NetworkNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/NetworkEdge"
+        node_count:
+          type: integer
+        edge_count:
+          type: integer
+        connected:
+          type: boolean
+        failed_nodes:
+          type: array
+          items:
+            type: string
+        failed_links:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+      required: [nodes, edges, node_count, edge_count, connected, failed_nodes, failed_links]
+    RouteInput:
+      type: object
+      properties:
+        source:
+          type: string
+          minLength: 1
+        destination:
+          type: string
+          minLength: 1
+      required: [source, destination]
+    RouteResult:
+      type: object
+      properties:
+        route:
+          type: array
+          items:
+            type: string
+        total_cost:
+          type: number
+        hop_count:
+          type: integer
+        reachable:
+          type: boolean
+        source:
+          type: string
+        destination:
+          type: string
+      required: [route, total_cost, hop_count, reachable, source, destination]
+    LinkFailureInput:
+      type: object
+      properties:
+        source:
+          type: string
+        target:
+          type: string
+      required: [source, target]
+    NodeFailureInput:
+      type: object
+      properties:
+        node:
+          type: string
+      required: [node]
+    FailureResult:
+      type: object
+      properties:
+        failure_type:
+          type: string
+        failed_component:
+          type: string
+        affected_route:
+          type: boolean
+        destination_reachable:
+          type: boolean
+        network:
+          $ref: "#/components/schemas/NetworkState"
+      required: [failure_type, failed_component, affected_route, destination_reachable, network]
+    RecoveryResult:
+      type: object
+      properties:
+        status:
+          type: string
+        original_route:
+          type: array
+          items:
+            type: string
+        recovery_route:
+          type: array
+          items:
+            type: string
+        original_cost:
+          type: number
+        recovery_cost:
+          type: ["number", "null"]
+        additional_cost:
+          type: ["number", "null"]
+        original_hops:
+          type: integer
+        recovery_hops:
+          type: ["integer", "null"]
+        failed_component:
+          type: ["string", "null"]
+      required: [status, original_route, recovery_route, original_cost, recovery_cost, additional_cost, original_hops, recovery_hops, failed_component]
+    SimulationInput:
+      type: object
+      properties:
+        simulations:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        node_count:
+          type: integer
+          minimum: 4
+          maximum: 40
+        seed:
+          type: integer
+          minimum: 0
+        density:
+          type: number
+          minimum: 0.15
+          maximum: 0.9
+      required: [simulations, node_count, seed]
+    SimulationResult:
+      type: object
+      properties:
+        total_simulations:
+          type: integer
+        failures_generated:
+          type: integer
+        affected_routes:
+          type: integer
+        successful_recoveries:
+          type: integer
+        failed_recoveries:
+          type: integer
+        recovery_success_rate:
+          type: number
+        average_original_cost:
+          type: number
+        average_recovery_cost:
+          type: number
+        average_additional_cost:
+          type: number
+        average_original_hops:
+          type: number
+        average_recovery_hops:
+          type: number
+        failure_breakdown:
+          type: object
+          properties:
+            link:
+              type: integer
+            node:
+              type: integer
+          required: [link, node]
+      required: [total_simulations, failures_generated, affected_routes, successful_recoveries, failed_recoveries, recovery_success_rate, average_original_cost, average_recovery_cost, average_additional_cost, average_original_hops, average_recovery_hops, failure_breakdown]
 

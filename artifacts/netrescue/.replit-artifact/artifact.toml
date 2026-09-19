@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "NetRescue"
+description = "A full-stack network resilience simulator for generating topologies, routing traffic, injecting failures, and measuring automatic recovery with a real FastAPI and NetworkX backend."
+version = "1.0.0"
+id = "artifacts/netrescue"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20167
+
+[services.development]
+run = "pnpm --filter @workspace/netrescue run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/netrescue", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/netrescue/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20167"
+BASE_PATH = "/"
