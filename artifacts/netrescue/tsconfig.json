@@ -1,15 +1,21 @@
 {
   "extends": "../../tsconfig.base.json",
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "vite.config.ts"],
   "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
     "noEmit": true,
+    "composite": true,
+    "module": "ESNext",
     "jsx": "preserve",
     "lib": ["esnext", "dom", "dom.iterable"],
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
     "types": ["node", "vite/client"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../node_modules/@types"
+    ],
     "paths": {
       "@/*": ["./src/*"]
     }

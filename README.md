@@ -30,11 +30,9 @@ backend/
   engine.py               Graph, routing, failure, recovery, and batch logic
   requirements.txt
   tests/test_engine.py
-artifacts/netrescue/
+artifacts/frontend/
   src/App.tsx             React application
   src/index.css           Application styling
-artifacts/api-server/
-  package.json            Replit workflow bridge for the Python API
 lib/api-spec/
   openapi.yaml            API contract used for generated TypeScript types
 ```
@@ -56,10 +54,10 @@ The API is available at `http://localhost:8000/api`, including interactive docs 
 
 ```bash
 pnpm install
-PORT=5173 BASE_PATH=/ pnpm --filter @workspace/netrescue run dev
+PORT=5173 BASE_PATH=/ pnpm --filter @workspace/frontend run dev
 ```
 
-The hosted Replit preview uses the managed API and frontend workflows. For a standalone local Vite preview, point requests at the same origin or add a Vite proxy for `/api` to `http://localhost:8000`.
+To preview the frontend locally, run the backend first, then start the frontend dev server. The frontend will automatically proxy API requests to `http://localhost:8000/api`.
 
 ## API endpoints
 
